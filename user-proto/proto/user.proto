@@ -1,0 +1,99 @@
+// Use proto3 syntax for modern features and Go-friendly code generation.
+syntax = "proto3";
+
+// Set the Go package path for the generated code.
+// The `pb` is a common convention for protobuf packages.
+option go_package = ".;pb";
+
+// Import a well-known type for timestamps.
+// This is a standard way to handle date/time values in Protobuf.
+import "google/protobuf/timestamp.proto";
+
+// The core data model for a User.
+// Field numbers (1, 2, 3...) are unique identifiers and should never be changed.
+message User {
+  string id = 1; // ObjectID as hex string
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string password = 5;
+  string saltcode = 6;
+  bool isactive = 7;
+  
+  // Note: We don't include the password hash in the user message
+  // that is sent over the wire for security. It should be handled
+  // internally by the service.
+  
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// Request message for creating a new user.
+// We include the raw password here as it will be hashed by the server.
+message CreateUserRequest {
+  string id = 1;
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string password = 5;
+  string saltcode = 6;
+  bool isactive = 7;
+}
+
+// Response message after a user is created.
+// It returns the newly created User object.
+message CreateUserResponse {
+  User user = 1;
+}
+
+// Request message for getting a user by their ID.
+message GetUserByIdRequest {
+  string id = 1;
+}
+
+// Response message for getting a user.
+message GetUserByIdResponse {
+  User user = 1;
+}
+
+// Request message for updating an existing user.
+// We use a separate message to allow for partial updates.
+// For example, if you only want to update the email, you don't
+// need to send the other fields.
+message UpdateUserRequest {
+  string id = 1; // ObjectID as hex string
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string password = 5;
+  string saltcode = 6;
+  bool isactive = 7;
+}
+
+// Response message after a user is updated.
+message UpdateUserResponse {
+  bool success = 1;
+}
+
+// Request message for list users.
+message ListUsersRequest {}
+
+// Response message for list users.
+message ListUsersResponse {
+  repeated User users = 1;
+}
+
+// Defines the gRPC service with the RPC methods.
+service UserService {
+  // Creates a new user.
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+
+  // Gets a user by their unique ID.
+  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
+
+  // Updates an existing user's information.
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+
+  // List users.
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+}
