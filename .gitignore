@@ -1,0 +1,54 @@
+# ---- Go ----
+bin/
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go coverage / testing
+*.out
+*.test
+
+# Dependency directories
+vendor/
+
+# ---- Protobuf Generated Files ----
+# You usually DO want to commit generated .pb.go files
+# BUT if you prefer to exclude them, uncomment below:
+# **/*.pb.go
+# **/*_grpc.pb.go
+# **/*.pb.gw.go
+
+# ---- MacOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ---- Editor / IDE ----
+.vscode/
+.idea/
+*.swp
+
+# ---- Logs ----
+*.log
+
+# ---- Temporary build scripts ----
+tmp/
+cache/
+*.bak
+
+# ---- node_modules (in case shared use) ----
+node_modules/
+
+# ---- Ignore git folders inside third_party ----
+third_party
+third_party/**/.git/
+third_party/**/.gitignore
+
+# ---- Ignore Google API extracted junk ----
+google
+google/**/.DS_Store
+google/**/__pycache__/

@@ -8,6 +8,28 @@ option go_package = ".;pb";
 // Import a well-known type for timestamps.
 // This is a standard way to handle date/time values in Protobuf.
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+// ✅ Swagger configuration
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "User Service API"
+    version: "1.0"
+    description: "This service handles user management."
+  }
+  security_definitions: {
+    security: {
+      key: "BearerAuth"
+      value: {
+        type: TYPE_API_KEY
+        in: IN_HEADER
+        name: "Authorization"
+        description: "JWT Authorization header using the Bearer scheme."
+      }
+    }
+  }
+};
 
 // The core data model for a User.
 // Field numbers (1, 2, 3...) are unique identifiers and should never be changed.
@@ -17,27 +39,23 @@ message User {
   string lastname = 3;
   string email = 4;
   string password = 5;
-  string saltcode = 6;
+  string accesskey = 6;
   bool isactive = 7;
   
   // Note: We don't include the password hash in the user message
   // that is sent over the wire for security. It should be handled
   // internally by the service.
   
-  google.protobuf.Timestamp created_at = 8;
-  google.protobuf.Timestamp updated_at = 9;
+  string createby = 8;
+  google.protobuf.Timestamp createdat = 9;
+  string updateby = 10;
+  google.protobuf.Timestamp updatedat = 11;
 }
 
 // Request message for creating a new user.
 // We include the raw password here as it will be hashed by the server.
 message CreateUserRequest {
-  string id = 1;
-  string firstname = 2;
-  string lastname = 3;
-  string email = 4;
-  string password = 5;
-  string saltcode = 6;
-  bool isactive = 7;
+  User user = 1;
 }
 
 // Response message after a user is created.
@@ -49,6 +67,7 @@ message CreateUserResponse {
 // Request message for getting a user by their ID.
 message GetUserByIdRequest {
   string id = 1;
+  string token = 2;
 }
 
 // Response message for getting a user.
@@ -62,12 +81,18 @@ message GetUserByIdResponse {
 // need to send the other fields.
 message UpdateUserRequest {
   string id = 1; // ObjectID as hex string
-  string firstname = 2;
-  string lastname = 3;
-  string email = 4;
-  string password = 5;
-  string saltcode = 6;
-  bool isactive = 7;
+  UserUpdate user = 2; // this will go in the JSON body
+}
+
+message UserUpdate {
+  string firstname = 1;
+  string lastname = 2;
+  string email = 3;
+  string password = 4;
+  string accesskey = 5;
+  string updatedby = 6;
+  google.protobuf.Timestamp updatedat = 7;
+  bool isactive = 8;
 }
 
 // Response message after a user is updated.
@@ -83,17 +108,184 @@ message ListUsersResponse {
   repeated User users = 1;
 }
 
+// Request message for delete user.
+message DeleteUserRequest {
+  string id = 1; // ObjectID as hex string
+}
+
+// Response message for list users.
+message DeleteUserResponse {
+  bool success = 1;
+}
+
+message userActionRequest {
+  string id = 1; // ObjectID as hex string
+  string firstname = 2;
+  string lastname = 3;
+  string email = 4;
+  string password = 5;
+  string accesskey = 6;
+  bool isactive = 7;
+  string module = 8;
+}
+
+message UserActionResponse {
+  oneof result {
+    LoginResponse login = 1;
+    CreateUserResponse register = 2;
+  }
+}
+
+message RefreshRequest {
+  string refreshToken = 1;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  string refreshToken = 2;   // refresh token
+}
+
+message Empty {}
+
+message AuthResponse {
+  string userid = 1;
+  string email = 2;
+  string firstname = 3;
+  string lastname = 4;
+  string role = 5;
+}
+
 // Defines the gRPC service with the RPC methods.
 service UserService {
-  // Creates a new user.
-  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
-
+  // Protected endpoints (JWT required)
   // Gets a user by their unique ID.
-  rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
+  rpc GetUserById (GetUserByIdRequest) returns (GetUserByIdResponse) {
+    option (google.api.http) = {
+      get: "/users/{id}"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get user by ID";
+      description: "Requires JWT authentication.";
+      security: {
+        security_requirement: {
+          key: "BearerAuth";
+          value: {};
+        }
+      }
+    };
+  }
 
   // Updates an existing user's information.
-  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      put: "/users/{id}"
+      body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update user";
+      description: "Requires JWT authentication.";
+      security: {
+        security_requirement: {
+          key: "BearerAuth";
+          value: {};
+        }
+      }
+    };
+  }
 
   // List users.
-  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/users"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List users";
+      description: "Requires JWT authentication.";
+      security: {
+        security_requirement: {
+          key: "BearerAuth";
+          value: {};
+        }
+      }
+    };
+  }
+
+  // Delete user
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {
+      delete: "/users/{id}"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete user";
+      description: "Requires JWT authentication.";
+      security: {
+        security_requirement: {
+          key: "BearerAuth";
+          value: {};
+        }
+      }
+    };
+  }
+
+  // Create/Register user
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/users/register"
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create/Register user";
+      description: "Requires JWT authentication.";
+      security: {
+        security_requirement: {
+          key: "BearerAuth";
+          value: {};
+        }
+      }
+    };
+  }
+
+  // Get user by JWT
+  rpc GetUser (Empty) returns (AuthResponse) {
+    option (google.api.http) = {
+      get: "/users/me"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Retrieve the currently authenticated user's data";
+      security: {
+        security_requirement: { key: "BearerAuth"; value: {}; }
+      };
+    };
+  }
+
+  // Public endpoints (no JWT)
+  // Login user
+  rpc LoginUser (LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/users/login"
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "User login (no authentication)";
+    };
+  }
+
+  // Refresh token
+  rpc RefreshToken (RefreshRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/refresh"
+    };
+  }
 }
