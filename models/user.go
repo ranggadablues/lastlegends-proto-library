@@ -3,7 +3,8 @@ package models
 import (
 	"time"
 
-	"github.com/ranggadablues/proto-library/user-proto/pb"
+	"lastlegends-proto-library/user-proto/pb"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

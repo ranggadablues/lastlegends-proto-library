@@ -1,7 +1,8 @@
 package models
 
 import (
-	"github.com/ranggadablues/proto-library/product-proto/pb"
+	"lastlegends-proto-library/product-proto/pb"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 

@@ -1,4 +1,4 @@
-module github.com/ranggadablues/proto-library
+module lastlegends-proto-library
 
 go 1.24.7
 
