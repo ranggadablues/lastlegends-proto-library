@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Path to Go services
-GW_SVC=../gateway-service
+GW_SVC=../last-legends-gateway-service
 # USER_SVC=../user-service
 # ORDER_SVC=../order-service
 
